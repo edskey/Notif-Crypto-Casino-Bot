@@ -1,0 +1,48 @@
+name: Check casino welcome promotions
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Безопасный режим запуска (первый poll создаёт baseline)'
+        required: true
+        default: poll
+        type: choice
+        options:
+          - poll
+          - summary
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notif-crypto-casino-bot-check
+  cancel-in-progress: false
+
+jobs:
+  collect-and-notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MODE: ${{ (github.event.schedule == '0 14 * * *' || inputs.mode == 'summary') && 'summary' || 'poll' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Collect each source and trigger protected endpoint
+        env:
+          CASINO_NOTIF_VERCEL_CHECK_URL: ${{ secrets.CASINO_NOTIF_VERCEL_CHECK_URL }}
+          CASINO_NOTIF_CHECK_SECRET: ${{ secrets.CASINO_NOTIF_CHECK_SECRET }}
+        run: node scripts/run-scheduled.js --mode="$MODE"
