@@ -33,7 +33,7 @@ function summaryMetadata(now = new Date()) {
   const value = (type) => parts.find((part) => part.type === type)?.value;
   return {
     summaryKey: `${value('year')}-${value('month')}-${value('day')}`,
-    summaryPeriod: value('weekday') === 'Sat' ? 'weekly' : 'daily',
+    summaryPeriod: 'weekly',
   };
 }
 

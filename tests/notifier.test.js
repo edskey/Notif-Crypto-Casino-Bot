@@ -156,13 +156,13 @@ test('routes a newly discovered evergreen offer to summaries without realtime de
   assert.equal(app.telegram.length, 0);
 });
 
-test('daily summary uses evergreen offers cached by successful poll sources', async (context) => {
+test('weekly summary uses evergreen offers cached by successful poll sources', async (context) => {
   const app = harness(context);
   const evergreen = promo('offers', 'cached-welcome', { evergreen: true, expiry: 'Бессрочно' });
   await app.invoke(poll(['offers'], [evergreen]));
   const summary = {
     mode: 'summary', sources: ['summary-static'], events: [],
-    summaryKey: '2026-08-12', summaryPeriod: 'daily',
+    summaryKey: '2026-08-15', summaryPeriod: 'weekly',
   };
   const result = await app.invoke(summary);
   assert.equal(result.body.sent, 1);
@@ -170,7 +170,7 @@ test('daily summary uses evergreen offers cached by successful poll sources', as
   assert.match(app.telegram[0].text, /cached-welcome/);
 });
 
-test('sends one idempotent daily summary and uses weekly title on Saturday payloads', async (context) => {
+test('sends one idempotent weekly summary', async (context) => {
   const app = harness(context);
   const event = promo('evergreen', 'welcome', { evergreen: true, expiry: 'Бессрочно' });
   const body = {
@@ -201,6 +201,9 @@ test('rejects malformed payloads and non-HTTPS URLs', async (context) => {
   const app = harness(context);
   assert.equal((await app.invoke({ mode: 'poll', sources: ['x'], events: [{}] })).status, 400);
   assert.equal((await app.invoke(poll(['x'], [promo('x', 'bad', { url: 'http://example.com/bad' })]))).status, 400);
+  assert.equal((await app.invoke({
+    mode: 'summary', sources: [], events: [], summaryKey: '2026-08-12', summaryPeriod: 'daily',
+  })).status, 400);
 });
 
 test('uses a bot-specific Redis namespace', () => {

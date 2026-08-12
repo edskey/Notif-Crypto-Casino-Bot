@@ -122,9 +122,7 @@ function summaryBlocks(events) {
 }
 
 function formatSummaryChunks(input) {
-  const title = input.summaryPeriod === 'weekly'
-    ? '📅 <b>Еженедельная сводка бессрочных welcome-бонусов</b>'
-    : '📆 <b>Ежедневная сводка бессрочных welcome-бонусов</b>';
+  const title = '📅 <b>Еженедельная сводка бессрочных welcome-бонусов</b>';
   const header = `${title}\nДата: ${escapeHtml(input.summaryKey)}`;
   const blocks = summaryBlocks(input.events);
   if (!blocks.length) return [];
@@ -194,7 +192,7 @@ function parsePayload(req) {
     event.casino && event.emoji && isSafeUrl(event.url) && event.fields.every(([a, b]) => a && b));
   if (!valid) return null;
   if (mode === 'summary') {
-    if (!/^20\d{2}-\d{2}-\d{2}$/.test(body.summaryKey) || !['daily', 'weekly'].includes(body.summaryPeriod)) return null;
+    if (!/^20\d{2}-\d{2}-\d{2}$/.test(body.summaryKey) || body.summaryPeriod !== 'weekly') return null;
     if (events.some((event) => !event.evergreen)) return null;
   }
   return {
