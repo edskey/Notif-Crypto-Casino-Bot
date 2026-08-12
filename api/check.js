@@ -87,6 +87,21 @@ function formatEvent(event) {
   ].join('\n');
 }
 
+function formatWelcome() {
+  return [
+    '🎰 И снова здарова',
+    '',
+    'Пока ты чешешь яйца на диване, я каждые 5 минут ищу новые промо в <b>Крипто-Казиках</b> для новых пользователей. Триггеры — <b>New User, First Deposit, Welcome Bonus</b> и десятки их форм. А ты думал?',
+    '',
+    '🔎 Источники: <a href="https://stake.com/casino/challenges">Stake</a>, <a href="https://roobet.com/promotions">Roobet</a>, <a href="https://t.me/RakeBit_Channel">RakeBit</a>, <a href="https://t.me/Rainbetcom">Rainbet</a>, <a href="https://shuffle.com/ru/promotions">Shuffle</a>, <a href="https://bc.game/ru/promotions/promotion">BC.Game</a>, <a href="https://gamdom.com/promotions">Gamdom</a>, <a href="https://winna.com/challenges">Winna</a>, <a href="https://thrill.com/casino">Thrill</a> и <a href="https://blog.rollbit.com/tag/promotions/">Rollbit</a>.',
+    '',
+    '🔔 Новые акции — прилетят сразу в канал.',
+    '📋 Бессрочные welcome-бонусы — в недельной сводке.',
+    '',
+    'Мой папа — @stable_farm',
+  ].join('\n');
+}
+
 function summaryBlocks(events) {
   const seenKeys = new Set();
   const deduplicated = [];
@@ -156,7 +171,7 @@ function parsePayload(req) {
   }
   if (!body || !Array.isArray(body.sources) || !Array.isArray(body.events) || body.events.length > MAX_EVENTS) return null;
   const mode = body.mode || 'poll';
-  if (!['poll', 'summary'].includes(mode)) return null;
+  if (!['poll', 'summary', 'welcome'].includes(mode)) return null;
   const sources = unique(body.sources, MAX_EVENTS).filter((name) => /^[a-z0-9_-]{1,100}$/i.test(name));
   if (sources.length !== body.sources.length) return null;
   const events = body.events.map((event) => ({
@@ -292,6 +307,16 @@ async function processSummary(input, state) {
   return { sent: chunks.length, offers: cachedEvents.length };
 }
 
+async function processWelcome(state) {
+  stateHelpers(state);
+  if (state.welcomeSentAt) return { sent: 0, skipped: 'welcome_already_sent' };
+  await sendTelegram(formatWelcome());
+  state.welcomeSentAt = new Date().toISOString();
+  state.checkedAt = state.welcomeSentAt;
+  await saveState(state);
+  return { sent: 1 };
+}
+
 async function handler(req, res) {
   if (req.method !== 'POST') return respond(res, 405, { error: 'method_not_allowed' });
   if (!matchesSecret(req)) return respond(res, 401, { error: 'unauthorized' });
@@ -303,9 +328,11 @@ async function handler(req, res) {
     locked = (await redis(['SET', LOCK_KEY, '1', 'NX', 'EX', 180])) === 'OK';
     if (!locked) return respond(res, 202, { ok: true, skipped: 'already_running' });
     const state = await loadState();
-    const result = input.mode === 'summary'
-      ? await processSummary(input, state)
-      : await processPoll(input, state);
+    const result = input.mode === 'welcome'
+      ? await processWelcome(state)
+      : input.mode === 'summary'
+        ? await processSummary(input, state)
+        : await processPoll(input, state);
     return respond(res, 200, { ok: true, mode: input.mode, ...result });
   } catch (error) {
     return respond(res, 500, { ok: false, error: error.message });
@@ -318,6 +345,7 @@ async function handler(req, res) {
 
 handler._private = {
   formatEvent,
+  formatWelcome,
   formatSummaryChunks,
   parsePayload,
   processPoll,

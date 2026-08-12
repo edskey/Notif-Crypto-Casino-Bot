@@ -73,6 +73,7 @@ async function main() {
   const mode = modeArg?.split('=')[1] || 'poll';
   if (mode === 'poll') await runPoll();
   else if (mode === 'summary') await runSummary();
+  else if (mode === 'welcome') await postPayload({ mode: 'welcome', sources: [], events: [] });
   else throw new Error(`Unsupported mode: ${mode}`);
 }
 

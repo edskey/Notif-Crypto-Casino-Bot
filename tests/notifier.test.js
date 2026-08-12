@@ -186,6 +186,17 @@ test('sends one idempotent daily summary and uses weekly title on Saturday paylo
   assert.equal(app.telegram.length, 1);
 });
 
+test('sends the linked welcome message only once', async (context) => {
+  const app = harness(context);
+  const body = { mode: 'welcome', sources: [], events: [] };
+  assert.equal((await app.invoke(body)).body.sent, 1);
+  assert.equal(app.telegram.length, 1);
+  assert.match(app.telegram[0].text, /Крипто-Казиках/);
+  assert.match(app.telegram[0].text, /href="https:\/\/stake\.com\/casino\/challenges"/);
+  assert.equal((await app.invoke(body)).body.sent, 0);
+  assert.equal(app.telegram.length, 1);
+});
+
 test('rejects malformed payloads and non-HTTPS URLs', async (context) => {
   const app = harness(context);
   assert.equal((await app.invoke({ mode: 'poll', sources: ['x'], events: [{}] })).status, 400);
