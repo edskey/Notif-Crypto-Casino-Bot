@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      MODE: ${{ (github.event.schedule == '0 14 * * *' || inputs.mode == 'summary') && 'summary' || 'poll' }}
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.schedule == '0 14 * * *' && 'summary' || 'poll') }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -41,6 +41,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
+        if: env.MODE != 'welcome'
         run: npx playwright install --with-deps chromium
       - name: Collect each source and trigger protected endpoint
         env:
