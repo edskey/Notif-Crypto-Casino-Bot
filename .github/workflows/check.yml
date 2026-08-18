@@ -1,13 +1,13 @@
 name: Check casino welcome promotions
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-    - cron: '0 14 * * 6'
+  # schedule:
+  #   - cron: '*/5 * * * *'
+  #   - cron: '0 14 * * 6'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Безопасный режим запуска (первый poll создаёт baseline)'
+        description: 'Режим запуска (обычный poll или baseline)'
         required: true
         default: poll
         type: choice
